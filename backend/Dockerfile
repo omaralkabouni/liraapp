@@ -2,14 +2,14 @@
 # Backend Dockerfile - Multi-stage build
 # =============================================================
 
-# Stage 1: Dependencies
+# Stage 1: Dependencies (production only)
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production && \
+RUN npm ci --omit=dev && \
     npm cache clean --force
 
-# Stage 2: Development
+# Stage 2: Development (with nodemon)
 FROM node:20-alpine AS development
 WORKDIR /app
 COPY package*.json ./
@@ -26,8 +26,10 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodeapp -u 1001
 
-# Copy dependencies
+# Copy production dependencies
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
 COPY --chown=nodeapp:nodejs . .
 
 # Create logs directory
