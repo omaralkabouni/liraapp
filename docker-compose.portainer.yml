@@ -29,10 +29,11 @@ services:
     networks:
       - liranow_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-liranow_user}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-liranow_user} -d $${POSTGRES_DB:-liranow_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 60s
 
   # =============================================
   # ⚡ Redis Cache
@@ -111,67 +112,10 @@ services:
     restart: unless-stopped
     networks:
       - liranow_net
-    expose:
-      - "80"
-
-  # =============================================
-  # 🌐 Nginx Reverse Proxy
-  # =============================================
-  nginx:
-    image: nginx:alpine
-    container_name: liranow_nginx
-    restart: unless-stopped
     ports:
       - "${APP_PORT:-8088}:80"   # غيّر 8088 إلى أي بورت متاح لديك
-    networks:
-      - liranow_net
     depends_on:
       - backend
-      - admin-panel
-    command: >
-      /bin/sh -c "
-      cat > /etc/nginx/conf.d/default.conf << 'EOF'
-      upstream backend_api {
-        server backend:3001;
-        keepalive 16;
-      }
-      upstream admin_ui {
-        server admin-panel:80;
-      }
-      server {
-        listen 80;
-        client_max_body_size 10M;
-        gzip on;
-        gzip_types application/json text/css application/javascript text/plain;
-
-        location /api/ {
-          proxy_pass http://backend_api;
-          proxy_http_version 1.1;
-          proxy_set_header Host $$host;
-          proxy_set_header X-Real-IP $$remote_addr;
-          proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
-          add_header Access-Control-Allow-Origin *;
-          add_header Access-Control-Allow-Methods 'GET, POST, PUT, DELETE, OPTIONS';
-          add_header Access-Control-Allow-Headers 'Content-Type, Authorization';
-          if ($$request_method = OPTIONS) { return 204; }
-        }
-
-        location /admin/ {
-          proxy_pass http://admin_ui/;
-          proxy_set_header Host $$host;
-        }
-
-        location /health {
-          proxy_pass http://backend_api;
-          access_log off;
-        }
-
-        location / {
-          return 301 /admin/;
-        }
-      }
-      EOF
-      nginx -g 'daemon off;'"
 
 # =============================================
 # 🗂️ Volumes
