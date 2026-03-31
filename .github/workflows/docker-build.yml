@@ -1,0 +1,84 @@
+name: 🪙 Build & Push Docker Images
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:  # يسمح بالتشغيل اليدوي من GitHub
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  build-and-push:
+    name: Build Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ---- Build Backend ----
+      - name: 🚀 Build & Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          dockerfile: ./backend/Dockerfile
+          target: production
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/liranow-backend:latest
+            ${{ env.IMAGE_PREFIX }}/liranow-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ---- Build Admin Panel ----
+      - name: 🎛️ Build & Push Admin Panel
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin-panel
+          dockerfile: ./admin-panel/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/liranow-admin:latest
+            ${{ env.IMAGE_PREFIX }}/liranow-admin:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ---- Build Postgres (with SQL scripts) ----
+      - name: 🗄️ Build & Push Postgres
+        uses: docker/build-push-action@v5
+        with:
+          context: ./database
+          dockerfile: ./database/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/liranow-postgres:latest
+            ${{ env.IMAGE_PREFIX }}/liranow-postgres:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: ✅ Summary
+        run: |
+          echo "## 🪙 الليرة الآن — Build Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | \`${{ env.IMAGE_PREFIX }}/liranow-backend:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Admin   | \`${{ env.IMAGE_PREFIX }}/liranow-admin:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Postgres| \`${{ env.IMAGE_PREFIX }}/liranow-postgres:latest\` |" >> $GITHUB_STEP_SUMMARY

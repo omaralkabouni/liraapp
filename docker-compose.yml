@@ -1,0 +1,256 @@
+# =============================================================
+# 🪙 الليرة الآن - Docker Compose
+# Production-ready setup for VPS Linux
+# Version: 1.0.0
+# =============================================================
+
+version: '3.9'
+
+services:
+
+  # =============================================
+  # 🗄️ PostgreSQL Database
+  # =============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: liranow_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-liranow_db}
+      POSTGRES_USER: ${POSTGRES_USER:-liranow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SecurePass2026!}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+      TZ: Asia/Damascus
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"   # Bind only to localhost (security)
+    networks:
+      - liranow_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-liranow_user} -d ${POSTGRES_DB:-liranow_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================
+  # ⚡ Redis Cache
+  # =============================================
+  redis:
+    image: redis:7-alpine
+    container_name: liranow_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-RedisPass2026!}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"   # Bind only to localhost (security)
+    networks:
+      - liranow_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--pass", "${REDIS_PASSWORD:-RedisPass2026!}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # =============================================
+  # 🚀 Backend API (Node.js + Express)
+  # =============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: liranow_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-liranow_user}:${POSTGRES_PASSWORD:-SecurePass2026!}@postgres:5432/${POSTGRES_DB:-liranow_db}
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RedisPass2026!}@redis:6379
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-change-this-super-secret-jwt-key-2026}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      # Admin Default Account
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@liranow.sy}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-LiraNow@2026}
+      ADMIN_NAME: ${ADMIN_NAME:-مدير النظام}
+      # Price Fetcher
+      PRICE_FETCH_INTERVAL_MINUTES: ${PRICE_FETCH_INTERVAL_MINUTES:-5}
+      EXCHANGE_RATE_API_KEY: ${EXCHANGE_RATE_API_KEY:-}
+      GOLD_API_KEY: ${GOLD_API_KEY:-}
+      # Cors
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3002}
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX: 100
+      TZ: Asia/Damascus
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - liranow_network
+    volumes:
+      - backend_logs:/app/logs
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # =============================================
+  # 🎛️ Admin Panel (Static HTML/JS served by Nginx)
+  # =============================================
+  admin-panel:
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+    container_name: liranow_admin
+    restart: unless-stopped
+    environment:
+      NGINX_HOST: localhost
+      TZ: Asia/Damascus
+    depends_on:
+      - backend
+    networks:
+      - liranow_network
+    expose:
+      - "80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # =============================================
+  # 🌐 Nginx - Reverse Proxy & SSL Termination
+  # =============================================
+  nginx:
+    image: nginx:alpine
+    container_name: liranow_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+      - certbot_data:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - admin-panel
+    networks:
+      - liranow_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # =============================================
+  # 🔐 Certbot - Free SSL (Let's Encrypt)
+  # =============================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: liranow_certbot
+    volumes:
+      - certbot_data:/var/www/certbot
+      - certbot_certs:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - liranow_network
+
+  # =============================================
+  # 📊 pgAdmin (Database Management - Dev Only)
+  # =============================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: liranow_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@liranow.sy}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-PgAdmin@2026}
+    ports:
+      - "127.0.0.1:5050:80"     # Only accessible via SSH tunnel
+    depends_on:
+      - postgres
+    networks:
+      - liranow_network
+    profiles:
+      - devtools                  # Only starts with: docker compose --profile devtools up
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# =============================================
+# 🗂️ Volumes
+# =============================================
+volumes:
+  postgres_data:
+    driver: local
+    name: liranow_postgres_data
+  redis_data:
+    driver: local
+    name: liranow_redis_data
+  backend_logs:
+    driver: local
+    name: liranow_backend_logs
+  nginx_ssl:
+    driver: local
+    name: liranow_nginx_ssl
+  nginx_logs:
+    driver: local
+    name: liranow_nginx_logs
+  certbot_data:
+    driver: local
+    name: liranow_certbot_data
+  certbot_certs:
+    driver: local
+    name: liranow_certbot_certs
+
+# =============================================
+# 🌐 Networks
+# =============================================
+networks:
+  liranow_network:
+    driver: bridge
+    name: liranow_network
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

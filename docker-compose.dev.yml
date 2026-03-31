@@ -1,0 +1,53 @@
+# =============================================================
+# Docker Compose — Development Override
+# الاستخدام: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# =============================================================
+
+version: '3.9'
+
+services:
+
+  postgres:
+    ports:
+      - "5432:5432"   # Expose for local DB tools (TablePlus, DBeaver, etc.)
+    environment:
+      POSTGRES_PASSWORD: devpassword      # Simple password for dev
+
+  redis:
+    command: redis-server --requirepass devredis
+    ports:
+      - "6379:6379"   # Expose for local Redis tools
+
+  backend:
+    build:
+      target: development     # Use dev stage with nodemon
+    volumes:
+      - ./backend/src:/app/src   # Hot reload
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://liranow_user:devpassword@postgres:5432/liranow_db
+      REDIS_URL: redis://:devredis@redis:6379
+      JWT_SECRET: dev-jwt-secret-not-for-production
+      ADMIN_EMAIL: admin@liranow.sy
+      ADMIN_PASSWORD: admin123
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173"
+    ports:
+      - "3001:3001"   # Expose API directly
+    command: npm run dev
+
+  admin-panel:
+    volumes:
+      - ./admin-panel/public:/usr/share/nginx/html   # Hot reload for admin panel
+    ports:
+      - "3002:80"   # Access at http://localhost:3002
+
+  nginx:
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro   # Simple dev config
+    ports:
+      - "80:80"
+
+  pgadmin:
+    profiles: []   # Enable pgAdmin in dev mode (remove profile restriction)
+    ports:
+      - "5050:80"

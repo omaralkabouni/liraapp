@@ -1,0 +1,48 @@
+# =============================================================
+# .gitignore - الليرة الآن
+# =============================================================
+
+# Environment files - NEVER commit these!
+.env
+.env.local
+.env.production
+*.env.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
+*.log
+backend/logs/
+
+# Docker volumes (local dev)
+.docker/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+dist/
+build/
+.next/
+
+# SSL certificates (generated on server)
+nginx/ssl/
+*.pem
+*.key
+*.crt
+
+# Temp files
+tmp/
+temp/

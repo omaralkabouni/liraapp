@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الليرة الآن — لوحة التحكم</title>
+<meta name="description" content="نظام إدارة أسعار الصرف والمعادن الثمينة - الليرة الآن">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page">
+
+<!-- ========================= LOGIN PAGE ========================= -->
+<div id="loginPage" class="login-container">
+  <div class="login-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">🪙</div>
+      <h1>الليرة الآن</h1>
+      <p>لوحة التحكم الإدارية</p>
+    </div>
+    <form id="loginForm" class="login-form">
+      <div class="form-group">
+        <label for="email">البريد الإلكتروني</label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="email" placeholder="admin@liranow.sy" required autocomplete="email">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">كلمة المرور</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="toggle-password" onclick="togglePassword()">👁️</button>
+        </div>
+      </div>
+      <div id="loginError" class="alert alert-error" style="display:none"></div>
+      <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+        <span id="loginBtnText">تسجيل الدخول</span>
+        <span id="loginSpinner" class="spinner" style="display:none"></span>
+      </button>
+    </form>
+    <p class="login-footer">نظام الليرة الآن v1.0 © 2026</p>
+  </div>
+</div>
+
+<!-- ========================= DASHBOARD ========================= -->
+<div id="dashboard" class="dashboard" style="display:none">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">🪙</div>
+      <div>
+        <div class="sidebar-title">الليرة الآن</div>
+        <div class="sidebar-subtitle">لوحة التحكم</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" onclick="showPage('overview')" id="nav-overview">
+        <span class="nav-icon">📊</span>
+        <span>نظرة عامة</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage('currencies')" id="nav-currencies">
+        <span class="nav-icon">💱</span>
+        <span>العملات</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage('gold')" id="nav-gold">
+        <span class="nav-icon">🥇</span>
+        <span>الذهب والفضة</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage('activity')" id="nav-activity">
+        <span class="nav-icon">📋</span>
+        <span>سجل العمليات</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage('ads')" id="nav-ads">
+        <span class="nav-icon">📢</span>
+        <span>الإعلانات</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage('settings')" id="nav-settings">
+        <span class="nav-icon">⚙️</span>
+        <span>الإعدادات</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="sidebarAvatar">م</div>
+        <div>
+          <div class="user-name" id="sidebarName">المدير</div>
+          <div class="user-role" id="sidebarRole">super_admin</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()" title="تسجيل الخروج">⏻</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="topbar">
+      <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title" id="pageTitle">نظرة عامة</div>
+      <div class="topbar-actions">
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          <span id="lastUpdateTime">جاري التحديث...</span>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="refreshAllData()">🔄 تحديث</button>
+      </div>
+    </header>
+
+    <!-- Pages Container -->
+    <div class="pages">
+
+      <!-- ======== OVERVIEW PAGE ======== -->
+      <div id="page-overview" class="page active">
+        <div class="stats-grid">
+          <div class="stat-card gold-card">
+            <div class="stat-icon">🥇</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-gold21">—</div>
+              <div class="stat-label">الذهب عيار 21 (ل.س/غ)</div>
+            </div>
+            <div class="stat-trend" id="stat-gold21-trend"></div>
+          </div>
+          <div class="stat-card silver-card">
+            <div class="stat-icon">🥈</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-silver">—</div>
+              <div class="stat-label">الفضة (ل.س/غ)</div>
+            </div>
+          </div>
+          <div class="stat-card usd-card">
+            <div class="stat-icon">💵</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-usd">—</div>
+              <div class="stat-label">الدولار الأمريكي (شراء)</div>
+            </div>
+          </div>
+          <div class="stat-card count-card">
+            <div class="stat-icon">💱</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-currencies-count">—</div>
+              <div class="stat-label">عدد العملات النشطة</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Gold Edit -->
+        <div class="card">
+          <div class="card-header">
+            <h2>⚡ تعديل سريع - أسعار الذهب</h2>
+          </div>
+          <div class="card-body">
+            <div class="quick-gold-grid">
+              <div class="quick-gold-item">
+                <label>عيار 18 (ل.س/غ)</label>
+                <input type="number" id="quick-gold18" class="input" placeholder="0">
+              </div>
+              <div class="quick-gold-item">
+                <label>عيار 21 (ل.س/غ)</label>
+                <input type="number" id="quick-gold21" class="input" placeholder="0">
+              </div>
+              <div class="quick-gold-item">
+                <label>عيار 24 (ل.س/غ)</label>
+                <input type="number" id="quick-gold24" class="input" placeholder="0">
+              </div>
+              <div class="quick-gold-item">
+                <label>سعر الفضة (ل.س/غ)</label>
+                <input type="number" id="quick-silver" class="input" placeholder="0">
+              </div>
+            </div>
+            <div class="mt-3">
+              <button class="btn btn-primary" onclick="quickUpdatePrices()">
+                💾 حفظ الأسعار
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <div class="card-header">
+            <h2>📋 آخر العمليات</h2>
+            <a href="#" onclick="showPage('activity')" class="btn btn-sm btn-outline">عرض الكل</a>
+          </div>
+          <div class="card-body">
+            <div id="recentActivity" class="activity-list">
+              <div class="loading">جاري التحميل...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======== CURRENCIES PAGE ======== -->
+      <div id="page-currencies" class="page" style="display:none">
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openAddCurrencyModal()">
+            ➕ إضافة عملة جديدة
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>💱 إدارة العملات</h2>
+            <input type="text" class="input input-sm" placeholder="بحث..." id="currencySearch" oninput="filterCurrencies()">
+          </div>
+          <div class="card-body p-0">
+            <div class="table-container">
+              <table class="table" id="currenciesTable">
+                <thead>
+                  <tr>
+                    <th>العملة</th>
+                    <th>الرمز</th>
+                    <th>سعر الشراء</th>
+                    <th>سعر البيع</th>
+                    <th>المصدر</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="currenciesBody">
+                  <tr><td colspan="7" class="text-center">جاري التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======== GOLD & SILVER PAGE ======== -->
+      <div id="page-gold" class="page" style="display:none">
+        <div class="two-col-grid">
+          <!-- Gold Card -->
+          <div class="card">
+            <div class="card-header">
+              <h2>🥇 أسعار الذهب</h2>
+              <span class="badge badge-gold">يدوي</span>
+            </div>
+            <div class="card-body">
+              <form id="goldForm" onsubmit="updateGoldPrices(event)">
+                <div class="form-group">
+                  <label>عيار 18 (ل.س/غرام)</label>
+                  <input type="number" id="gold18" class="input" min="0" required>
+                </div>
+                <div class="form-group">
+                  <label>عيار 21 (ل.س/غرام)</label>
+                  <input type="number" id="gold21" class="input" min="0" required>
+                </div>
+                <div class="form-group">
+                  <label>عيار 24 (ل.س/غرام)</label>
+                  <input type="number" id="gold24" class="input" min="0" required>
+                </div>
+                <div class="form-group">
+                  <label>سعر الأوقية بالدولار (مرجعي)</label>
+                  <input type="number" id="goldUsd" class="input" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                  <label>ملاحظات</label>
+                  <textarea id="goldNotes" class="input" rows="2" placeholder="ملاحظات اختيارية..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">💾 تحديث أسعار الذهب</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Silver Card -->
+          <div class="card">
+            <div class="card-header">
+              <h2>🥈 أسعار الفضة</h2>
+              <span class="badge badge-silver">يدوي</span>
+            </div>
+            <div class="card-body">
+              <form id="silverForm" onsubmit="updateSilverPrice(event)">
+                <div class="form-group">
+                  <label>سعر الغرام (ل.س/غرام)</label>
+                  <input type="number" id="silver-gram" class="input" min="0" required>
+                </div>
+                <div class="form-group">
+                  <label>سعر الأوقية بالدولار (مرجعي)</label>
+                  <input type="number" id="silverUsd" class="input" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                  <label>ملاحظات</label>
+                  <textarea id="silverNotes" class="input" rows="2" placeholder="ملاحظات اختيارية..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">💾 تحديث سعر الفضة</button>
+              </form>
+              <!-- Price History Info -->
+              <div class="history-info mt-3">
+                <div class="history-item">
+                  <span>آخر تحديث للذهب:</span>
+                  <span id="goldLastUpdate" class="text-muted">—</span>
+                </div>
+                <div class="history-item">
+                  <span>آخر تحديث للفضة:</span>
+                  <span id="silverLastUpdate" class="text-muted">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======== ACTIVITY LOG PAGE ======== -->
+      <div id="page-activity" class="page" style="display:none">
+        <!-- Stats -->
+        <div class="stats-grid stats-grid-3" id="activityStats">
+          <div class="stat-card mini">
+            <div class="stat-value" id="act-today">—</div>
+            <div class="stat-label">عمليات اليوم</div>
+          </div>
+          <div class="stat-card mini">
+            <div class="stat-value" id="act-week">—</div>
+            <div class="stat-label">هذا الأسبوع</div>
+          </div>
+          <div class="stat-card mini">
+            <div class="stat-value" id="act-total">—</div>
+            <div class="stat-label">إجمالي العمليات</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>📋 سجل العمليات</h2>
+            <div class="filter-group">
+              <select class="input input-sm" id="filterEntity" onchange="loadActivityLog()">
+                <option value="">كل الأنواع</option>
+                <option value="gold">الذهب</option>
+                <option value="silver">الفضة</option>
+                <option value="currency">العملات</option>
+                <option value="auth">تسجيل الدخول</option>
+                <option value="settings">الإعدادات</option>
+                <option value="ads">الإعلانات</option>
+              </select>
+              <input type="date" class="input input-sm" id="filterFrom" onchange="loadActivityLog()">
+              <input type="date" class="input input-sm" id="filterTo" onchange="loadActivityLog()">
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>الوقت</th>
+                    <th>المستخدم</th>
+                    <th>العملية</th>
+                    <th>النوع</th>
+                    <th>الوصف</th>
+                  </tr>
+                </thead>
+                <tbody id="activityBody">
+                  <tr><td colspan="5" class="text-center">جاري التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- Pagination -->
+            <div class="pagination" id="activityPagination"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======== ADS PAGE ======== -->
+      <div id="page-ads" class="page" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h2>📢 مساحات الإعلانات</h2>
+            <span class="badge badge-info">AdSense + AdMob</span>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info">
+              💡 قم بإضافة معرّفات الإعلانات (Ad Unit IDs) من لوحة Google وتفعيل المواضع التي تريدها
+            </div>
+            <div id="adsContainer" class="ads-grid">
+              <div class="loading">جاري التحميل...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======== SETTINGS PAGE ======== -->
+      <div id="page-settings" class="page" style="display:none">
+        <div class="two-col-grid">
+          <div class="card">
+            <div class="card-header"><h2>⚙️ إعدادات التطبيق</h2></div>
+            <div class="card-body">
+              <form id="settingsForm" onsubmit="saveSettings(event)">
+                <div class="form-group">
+                  <label>اسم التطبيق (عربي)</label>
+                  <input type="text" id="set-app_name" class="input">
+                </div>
+                <div class="form-group">
+                  <label>اسم التطبيق (إنجليزي)</label>
+                  <input type="text" id="set-app_name_en" class="input">
+                </div>
+                <div class="form-group">
+                  <label>فترة التحديث التلقائي (بالدقائق)</label>
+                  <input type="number" id="set-update_interval_minutes" class="input" min="1" max="60">
+                </div>
+                <div class="form-group">
+                  <label>رابط قناة التيليغرام</label>
+                  <input type="text" id="set-telegram_channel" class="input" placeholder="https://t.me/...">
+                </div>
+                <div class="form-group">
+                  <label>رقم الواتساب</label>
+                  <input type="text" id="set-whatsapp_number" class="input" placeholder="+963...">
+                </div>
+                <div class="form-group">
+                  <label>إخلاء المسؤولية</label>
+                  <textarea id="set-price_disclaimer" class="input" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 حفظ الإعدادات</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h2>🔒 الأمان</h2></div>
+            <div class="card-body">
+              <form id="passwordForm" onsubmit="changePassword(event)">
+                <div class="form-group">
+                  <label>كلمة المرور الحالية</label>
+                  <input type="password" id="currentPassword" class="input" required>
+                </div>
+                <div class="form-group">
+                  <label>كلمة المرور الجديدة</label>
+                  <input type="password" id="newPassword" class="input" required minlength="8">
+                </div>
+                <div class="form-group">
+                  <label>تأكيد كلمة المرور</label>
+                  <input type="password" id="confirmPassword" class="input" required>
+                </div>
+                <button type="submit" class="btn btn-warning">🔑 تغيير كلمة المرور</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end pages -->
+  </main>
+</div>
+
+<!-- ======== MODALS ======== -->
+<!-- Add/Edit Currency Modal -->
+<div id="currencyModal" class="modal" style="display:none">
+  <div class="modal-backdrop" onclick="closeModal('currencyModal')"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="currencyModalTitle">إضافة عملة جديدة</h3>
+      <button class="modal-close" onclick="closeModal('currencyModal')">✕</button>
+    </div>
+    <form id="currencyForm" onsubmit="saveCurrency(event)">
+      <input type="hidden" id="currencyId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>رمز العملة (Code)</label>
+          <input type="text" id="c-code" class="input" placeholder="USD" maxlength="10" required>
+        </div>
+        <div class="form-group">
+          <label>الرمز المختصر</label>
+          <input type="text" id="c-symbol" class="input" placeholder="$" required>
+        </div>
+        <div class="form-group">
+          <label>الاسم بالعربية</label>
+          <input type="text" id="c-name_ar" class="input" placeholder="الدولار الأمريكي" required>
+        </div>
+        <div class="form-group">
+          <label>الاسم بالإنجليزية</label>
+          <input type="text" id="c-name_en" class="input" placeholder="US Dollar" required>
+        </div>
+        <div class="form-group">
+          <label>العلم (Emoji)</label>
+          <input type="text" id="c-flag_emoji" class="input" placeholder="🇺🇸">
+        </div>
+        <div class="form-group">
+          <label>ترتيب العرض</label>
+          <input type="number" id="c-display_order" class="input" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>سعر الشراء (ل.س)</label>
+          <input type="number" id="c-buy_price" class="input" min="0" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>سعر البيع (ل.س)</label>
+          <input type="number" id="c-sell_price" class="input" min="0" step="0.01" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>المصدر</label>
+        <select id="c-source" class="input">
+          <option value="manual">يدوي</option>
+          <option value="auto">تلقائي (API)</option>
+        </select>
+      </div>
+      <div id="currencyFormError" class="alert alert-error" style="display:none"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('currencyModal')">إلغاء</button>
+        <button type="submit" class="btn btn-primary">💾 حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Confirm Dialog -->
+<div id="confirmDialog" class="modal" style="display:none">
+  <div class="modal-backdrop" onclick="closeModal('confirmDialog')"></div>
+  <div class="modal-content modal-sm">
+    <div class="modal-header">
+      <h3 id="confirmTitle">تأكيد</h3>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage"></p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('confirmDialog')">إلغاء</button>
+      <button class="btn btn-danger" id="confirmBtn">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
