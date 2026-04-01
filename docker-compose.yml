@@ -105,7 +105,7 @@ services:
     build:
       context: ./admin-panel
       dockerfile: Dockerfile
-    image: liranow_admin
+    image: liranow_admin_v2
     container_name: liranow_admin
     restart: unless-stopped
     networks:
